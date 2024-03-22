@@ -2,6 +2,7 @@ import glob
 import math
 import os
 import tempfile
+import threading
 import time
 import atexit
 import shutil
@@ -14,8 +15,10 @@ from pygameextra import Text
 
 pe.init()
 
-RECORDING_DIRECTORY = os.path.join(os.path.dirname(__file__), 'recording')
+SCRIPT_DIR = os.path.dirname(__file__)
+RECORDING_DIRECTORY = os.path.join(SCRIPT_DIR, 'recording')
 os.makedirs(RECORDING_DIRECTORY, exist_ok=True)
+RECORDING_IN_PROGRESS = False
 
 
 class ButtonRecorderMixin(pe.Button):
@@ -25,7 +28,7 @@ class ButtonRecorderMixin(pe.Button):
     RECORDING_SURFACE_BACKGROUND: Tuple[int, int, int] = pe.colors.darkgray
     RECORDING_FAKE_OUTLINE: int = 15
     RECORDING_FAKE_INLINE: int = 5
-    RECORDING_FRAMES = 30
+    RECORDING_FRAMES = 40
     RECORDING_TIME = 1.5
 
     button_name: str
@@ -37,7 +40,7 @@ class ButtonRecorderMixin(pe.Button):
     _hovered: bool
     _area: Tuple[int, int, int, int]
     _surface: pe.Surface = None
-    spoofed_mouse_position: Tuple[int, int] = (-100, -100)
+    spoofed_mouse_position: Tuple[int, int] = None
     original_area: Tuple[int, int, int, int]
 
     # state 0: mouse going in
@@ -60,6 +63,7 @@ class ButtonRecorderMixin(pe.Button):
         )
 
     def handle_recording(self):
+        global RECORDING_IN_PROGRESS
         if self.elapsed < 0.5:
             self.recording_state = 0
         elif self.elapsed < 1:
@@ -69,18 +73,23 @@ class ButtonRecorderMixin(pe.Button):
         elif self.elapsed >= 1.5:
             self.recording = False
             self.recording_state = -1
-            frames = [
-                Image.open(image)
-                for image in sorted(
-                    glob.glob(
-                        f"{self.recording_temp_dir}/*.png"),
-                    key=lambda x: int(os.path.basename(x).split('.')[0])
-                )
-            ]
-            frame_one = frames[0]
-            frame_one.save(os.path.join(RECORDING_DIRECTORY, f"{self.button_name}.gif"), format="GIF",
-                           append_images=frames,
-                           save_all=True, duration=100, loop=0)
+            threading.Thread(target=self.save_gif, daemon=True).start()
+            RECORDING_IN_PROGRESS = False
+
+    def save_gif(self):
+        frames = [
+            Image.open(image)
+            for image in sorted(
+                glob.glob(
+                    f"{self.recording_temp_dir}/*.png"),
+                key=lambda x: int(os.path.basename(x).split('.')[0])
+            )
+        ]
+        frame_one = frames[0]
+        frame_one.save(os.path.join(RECORDING_DIRECTORY, f"{self.button_name}.gif"), format="GIF",
+                       append_images=frames,
+                       save_all=True, fps=self.RECORDING_FRAMES / 1.5,
+                       loop=0)
 
     @property
     def area(self):
@@ -99,23 +108,26 @@ class ButtonRecorderMixin(pe.Button):
         pe.fill.full(self.RECORDING_SURFACE_BACKGROUND, self._surface)
         return self._surface
 
+    def get_fake_mouse_position(self):
+        t = 0
+        if self.recording_state == 0:
+            t = min(1, (self.elapsed * 2))
+        elif self.recording_state == 1:
+            t = 1
+        else:
+            t = 1 - ((self.elapsed - 1) / 0.5)
+        return pe.math.lerp(
+            tuple(size - (padding // 4) for size, padding in
+                  zip(self.RECORDING_SURFACE_AREA, self.RECORDING_PADDING)),
+            tuple(size // 2 for size in self.RECORDING_SURFACE_AREA),
+            t
+        )
+
     def logic(self, *args, **kwargs):
         if not self.recording:
             self._logic(*args, **kwargs)
         else:
-            t = 0
-            if self.recording_state == 0:
-                t = min(1, (self.elapsed / 0.5))
-            elif self.recording_state == 1:
-                t = 1
-            else:
-                t = 1 - ((self.elapsed - 1) / 0.5)
-            fake_mouse_position = pe.math.lerp(
-                tuple(size - (padding // 4) for size, padding in
-                      zip(self.RECORDING_SURFACE_AREA, self.RECORDING_PADDING)),
-                tuple(size // 2 for size in self.RECORDING_SURFACE_AREA),
-                t
-            )
+            fake_mouse_position = self.get_fake_mouse_position()
 
             @pe.mouse.offset_wrap(
                 tuple(
@@ -125,7 +137,10 @@ class ButtonRecorderMixin(pe.Button):
                 self._logic(*args, **kwargs)
                 self.spoofed_mouse_position = pe.mouse.pos()
 
+            if self.recording_state == 1:
+                pe.settings.spoof_mouse_clicked = (True, False, False)
             wrapped()
+            pe.settings.spoof_mouse_clicked = None
 
     def render(self, *args, **kwargs):
         pe.draw.rect(pe.colors.black, self.original_area, 2)
@@ -140,8 +155,17 @@ class ButtonRecorderMixin(pe.Button):
                 self._render(*args, **kwargs)
 
                 if self.recording_capture_index < frame:
-                    pe.draw.circle((*pe.colors.black, 50), self.spoofed_mouse_position, self.RECORDING_FAKE_OUTLINE, 3)
-                    pe.draw.circle((*pe.colors.black, 50), self.spoofed_mouse_position, self.RECORDING_FAKE_INLINE, 0)
+                    if self.recording_state == 1:
+                        pe.draw.circle(
+                            (*pe.colors.black, 50),
+                            self.spoofed_mouse_position or self.get_fake_mouse_position(),
+                            self.RECORDING_FAKE_OUTLINE, 3
+                        )
+                    pe.draw.circle(
+                        (*pe.colors.black, 50),
+                        self.spoofed_mouse_position or self.get_fake_mouse_position(),
+                        self.RECORDING_FAKE_INLINE, 0
+                    )
 
                     self.recording_capture_index = frame
                     pe.pygame.image.save(self._surface.surface,
@@ -193,9 +217,11 @@ def class_recordable_wrapper(cls: Type[pe.Button]):
             self.original_area = area
 
         def logic(self, *args, **kwargs):
+            global RECORDING_IN_PROGRESS
             super().logic(*args, **kwargs)
-            if self.hovered and not self.recording and pe.settings.game_context.trigger_recording:
+            if self.hovered and not self.recording and pe.settings.game_context.trigger_recording and not RECORDING_IN_PROGRESS:
                 pe.settings.game_context.trigger_recording = False
+                RECORDING_IN_PROGRESS = True
                 self.recording = True
                 self._hovered = False
                 self.recording_state = 0
@@ -261,12 +287,16 @@ class Context(pe.GameContext):
     positions: Generator[Tuple[int, int], None, None]
     COLOR_A = pe.colors.purple
     COLOR_B = pe.colors.darkaqua
+    IMAGE_A: pe.Image
+    IMAGE_B: pe.Image
     FPS_LOGGER = True
     FPS = 220
 
     def __init__(self):
         super().__init__()
         self.trigger_recording = False
+        self.IMAGE_A = pe.Image(os.path.join(SCRIPT_DIR, 'IMAGE_A.png'), self.BUTTON_SIZE)
+        self.IMAGE_B = pe.Image(os.path.join(SCRIPT_DIR, 'IMAGE_B.png'), self.BUTTON_SIZE)
 
     def handle_event(self, _):
         super().handle_event(_)
@@ -286,7 +316,9 @@ class Context(pe.GameContext):
         return *next(self.positions), *self.BUTTON_SIZE
 
     def loop(self):
+        pe.button.action(self.button_area, button_name='pe.button.action')
         pe.button.rect(self.button_area, self.COLOR_A, self.COLOR_B, button_name='pe.button.rect')
+        pe.button.image(self.button_area, self.IMAGE_A, self.IMAGE_B, button_name='pe.button.image')
 
     def pre_loop(self):
         super().pre_loop()

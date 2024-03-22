@@ -18,7 +18,9 @@ setup(
     long_description=long,
     packages=['pygameextra_cool_buttons', 'pygameextra_cool_buttons_tester'],
     install_requires=['pygameextra>=2.0.0b45', 'Pillow'],
-    package_data={},
+    package_data={
+        'pygameextra_cool_buttons_tester': ['IMAGE_A.png', 'IMAGE_B.png'],
+    },
     keywords=['python'],
     entry_points={
         'console_scripts': [

@@ -38,6 +38,7 @@ class ButtonRecorderMixin(pe.Button):
     _area: Tuple[int, int, int, int]
     _surface: pe.Surface = None
     spoofed_mouse_position: Tuple[int, int] = (-100, -100)
+    original_area: Tuple[int, int, int, int]
 
     # state 0: mouse going in
     # state 1: mouse in
@@ -127,6 +128,7 @@ class ButtonRecorderMixin(pe.Button):
             wrapped()
 
     def render(self, *args, **kwargs):
+        pe.draw.rect(pe.colors.black, self.original_area, 2)
         if not self.recording:
             self._render(*args, **kwargs)
         else:
@@ -188,6 +190,7 @@ def class_recordable_wrapper(cls: Type[pe.Button]):
             self.recording_state = -1
             self.recording_start = 0
             self.recording_capture_index = -1
+            self.original_area = area
 
         def logic(self, *args, **kwargs):
             super().logic(*args, **kwargs)
@@ -247,6 +250,7 @@ if not hasattr(pe.settings, 'wrapped'):
     pe.button.rect = button_naming_wrapper(pe.button.rect)
     pe.button.image = button_naming_wrapper(pe.button.image)
     setattr(pe.settings, 'wrapped', True)
+
 
 class Context(pe.GameContext):
     AREA = (800, 500)

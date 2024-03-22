@@ -7,6 +7,8 @@ import time
 import atexit
 import shutil
 import pygameextra as pe
+import pygameextra_cool_buttons
+from pygameextra_cool_buttons.color import *
 from functools import wraps, lru_cache
 from typing import Type, Generator, Tuple, Union
 from PIL import Image
@@ -287,6 +289,10 @@ class Context(pe.GameContext):
     positions: Generator[Tuple[int, int], None, None]
     COLOR_A = pe.colors.purple
     COLOR_B = pe.colors.darkaqua
+    COLOR_B_PULSING = PulsingColor(GradientColor(
+        PartialGradientColor(Color(pe.colors.darkaqua), 0),
+        PartialGradientColor(Color(pe.colors.aquamarine), 1)
+    ), 0.1, 0, 0.4)
     IMAGE_A: pe.Image
     IMAGE_B: pe.Image
     FPS_LOGGER = True
@@ -319,6 +325,7 @@ class Context(pe.GameContext):
         pe.button.action(self.button_area, button_name='pe.button.action')
         pe.button.rect(self.button_area, self.COLOR_A, self.COLOR_B, button_name='pe.button.rect')
         pe.button.image(self.button_area, self.IMAGE_A, self.IMAGE_B, button_name='pe.button.image')
+        pe.button.rect(self.button_area, self.COLOR_A, self.COLOR_B_PULSING, button_name='pulsing color')
 
     def pre_loop(self):
         super().pre_loop()

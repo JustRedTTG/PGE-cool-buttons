@@ -17,7 +17,7 @@ setup(
     long_description_content_type="text/markdown",
     long_description=long,
     packages=['pygameextra_cool_buttons', 'pygameextra_cool_buttons_tester'],
-    install_requires=['pygameextra>=2.0.0b45'],
+    install_requires=['pygameextra>=2.0.0b45', 'Pillow'],
     package_data={},
     keywords=['python'],
     entry_points={

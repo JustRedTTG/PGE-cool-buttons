@@ -236,16 +236,17 @@ def button_check_hover_wrapper(func):
 
 
 # Wrap pygameextra button components to allow for button recording
-pe.button.check_hover = button_check_hover_wrapper(pe.button.check_hover)
+if not hasattr(pe.settings, 'wrapped'):
+    pe.button.check_hover = button_check_hover_wrapper(pe.button.check_hover)
 
-pe.button.Button = class_recordable_wrapper(pe.button.Button)
-pe.button.RectButton = class_recordable_wrapper(pe.button.RectButton)
-pe.button.ImageButton = class_recordable_wrapper(pe.button.ImageButton)
+    pe.button.Button = class_recordable_wrapper(pe.button.Button)
+    pe.button.RectButton = class_recordable_wrapper(pe.button.RectButton)
+    pe.button.ImageButton = class_recordable_wrapper(pe.button.ImageButton)
 
-pe.button.action = button_naming_wrapper(pe.button.action)
-pe.button.rect = button_naming_wrapper(pe.button.rect)
-pe.button.image = button_naming_wrapper(pe.button.image)
-
+    pe.button.action = button_naming_wrapper(pe.button.action)
+    pe.button.rect = button_naming_wrapper(pe.button.rect)
+    pe.button.image = button_naming_wrapper(pe.button.image)
+    setattr(pe.settings, 'wrapped', True)
 
 class Context(pe.GameContext):
     AREA = (800, 500)

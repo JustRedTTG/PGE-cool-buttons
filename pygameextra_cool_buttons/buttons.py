@@ -44,7 +44,8 @@ class WrappedButtonClass(buttons.Button):
 
     @property
     def dynamic_area(self):
-        return self.get_shadow_area(self.area, self.shadow_offset) if self.shadow and mouse.clicked()[0] else None
+        return self.get_shadow_area(self.area, self.shadow_offset) \
+            if self.shadow and mouse.clicked()[0] and self.hovered else None
 
     @staticmethod
     def _edge_rounding_translation(name: str, edge_rounding: int):

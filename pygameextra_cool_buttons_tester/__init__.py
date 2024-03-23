@@ -344,7 +344,8 @@ class Context(pe.GameContext):
         cb.rect(self.button_area, self.COLOR_A, self.COLOR_B, button_name='pe.button.rect')
         cb.image(self.button_area, self.IMAGE_A, self.IMAGE_B, button_name='pe.button.image')
 
-        cb.rect(self.button_area, self.COLOR_A, self.COLOR_B, button_name='shadow', shadow=True)
+        cb.rect(self.button_area, self.COLOR_A, self.COLOR_B,
+                button_name='shadow', shadow_offset=(0, 5), shadow_color=self.COLOR_B_PULSING)
         cb.rect(self.button_area, self.COLOR_A_PULSING, self.COLOR_B_PULSING, button_name='pulsing gradient')
         cb.rect(self.button_area, self.COLOR_A, self.COLOR_B, button_name='outline',
                 inactive_resource_width=2, active_resource_width=4)

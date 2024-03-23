@@ -26,7 +26,7 @@ class WrappedButtonClass(buttons.Button, WrappedButtonClassBase):
     __base_button__ = buttons.Button
 
     def __init__(self, *args,
-                 shadow: bool = False, shadow_color: tuple = (0, 0, 0, 50), shadow_offset: tuple = (2, 2),
+                 shadow: bool = None, shadow_color: tuple = None, shadow_offset: tuple = None,
                  edge_rounding: int = -1,
                  edge_rounding_topright: int = -1, edge_rounding_topleft: int = -1,
                  edge_rounding_bottomright: int = -1, edge_rounding_bottomleft: int = -1,
@@ -98,13 +98,14 @@ class WrappedButtonClass(buttons.Button, WrappedButtonClassBase):
                                                                    edge_rounding_bottomright)
         edge_rounding_bottomleft = cls._edge_rounding_translation('edge_rounding_bottomleft', edge_rounding_bottomleft)
 
-
-
         if cls.__base_button__ in button_expansion_map:
             if shadow:
-                button_expansion_map[cls.__base_button__].static_render_shadow(area, hovered, disabled, shadow_color, shadow_offset,
-                                         edge_rounding, edge_rounding_topright, edge_rounding_topleft,
-                                         edge_rounding_bottomright, edge_rounding_bottomleft, **extra_kwargs)
+                button_expansion_map[cls.__base_button__].static_render_shadow(area, hovered, disabled, shadow_color,
+                                                                               shadow_offset,
+                                                                               edge_rounding, edge_rounding_topright,
+                                                                               edge_rounding_topleft,
+                                                                               edge_rounding_bottomright,
+                                                                               edge_rounding_bottomleft, **extra_kwargs)
 
             button_expansion_map[cls.__base_button__].static_render(
                 dynamic_area or area, inactive_resource, active_resource,
@@ -134,13 +135,12 @@ class WrappedButtonClass(buttons.Button, WrappedButtonClassBase):
         disabled = self._color_translation('disabled', disabled)
         self_disabled = self._color_translation('self_disabled', self.disabled)
 
-        shadow_color = None
         self_shadow_color = None
 
-        if shadow:
+        if (shadow or settings.cb_default_shadow) or self.shadow:
             shadow_color = self._color_translation('shadow_color', shadow_color)
-        elif self.shadow:
-            self_shadow_color = self._color_translation('self_shadow_color', self.shadow_color)
+            self_shadow_color = self._color_translation('self_shadow_color',
+                                                        self.shadow_color or settings.cb_default_shadow_color)
 
         self.static_render(area or self.area, inactive_resource or self_inactive_resource,
                            active_resource or self_active_resource, self.hovered, disabled or self_disabled,

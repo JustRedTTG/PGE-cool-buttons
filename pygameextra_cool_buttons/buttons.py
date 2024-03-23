@@ -146,6 +146,8 @@ def button_function_wrapper(func):
             logging.warning("Using the pygameextra button functions without a game context will not work properly")
             setattr(settings, 'cb_warn_function_wrapper', True)
             return
+        elif not settings.game_context:
+            return
         button = settings.game_context.buttons[-1]
         button.shadow = shadow
         button.shadow_color = shadow_color
@@ -156,6 +158,7 @@ def button_function_wrapper(func):
         button.edge_rounding_bottomright = edge_rounding_bottomright
         button.edge_rounding_bottomleft = edge_rounding_bottomleft
         setattr(button, 'cool_button', True)
+        buttons.check_hover(button)
 
     return wrapped
 

@@ -1,6 +1,6 @@
 from setuptools import setup
 
-version = "1.1"
+version = "1.1.1"
 short = 'Pygameextra cool buttons is a extension for pygameextra that adds cool buttons'
 long = '''Pygameextra cool buttons is an extension for pygameextra,
 that adds many button effects and customizations to spice up your app!

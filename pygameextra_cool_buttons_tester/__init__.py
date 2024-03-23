@@ -14,6 +14,7 @@ from typing import Type, Generator, Tuple, Union
 from PIL import Image
 
 pe.settings.cb_default_edge_rounding = 4
+pe.settings.cb_default_shadow = True
 
 pe.init()
 
@@ -33,7 +34,7 @@ class ButtonRecorderMixin(pe.Button):
     RECORDING_FRAMES = 40
     RECORDING_TIME_IN = 4
     RECORDING_TIME_HOLD = 4
-    RECORDING_CLICK_HOLD = .1
+    RECORDING_CLICK_HOLD = .3
     RECORDING_TIME_OUT = 4
     RECORDING_TIME = RECORDING_TIME_IN + RECORDING_TIME_HOLD + RECORDING_TIME_OUT
 
@@ -165,7 +166,7 @@ class ButtonRecorderMixin(pe.Button):
                 self._render(*args, **kwargs)
 
                 if self.recording_capture_index < frame:
-                    if self.spoof_mouse_click == 1:
+                    if self.spoof_mouse_click:
                         pe.draw.circle(
                             (*pe.colors.black, 50),
                             self.spoofed_mouse_position or self.get_fake_mouse_position(),
@@ -214,6 +215,7 @@ class ButtonRecorderMixin(pe.Button):
 
 
 def class_recordable_wrapper(cls: Type[pe.Button]):
+    @wraps(cls, updated=())
     class RecordableButton(ButtonRecorderMixin, cls):
         # For anyone copying this, it only works within contexts
         def __init__(self, area, *args, **kwargs):
@@ -275,7 +277,7 @@ def button_check_hover_wrapper(func):
 
 
 # Wrap pygameextra button components to allow for button recording
-if not hasattr(pe.settings, 'wrapped'):
+if not hasattr(pe.settings, 'cb_tester_wrapped'):
     pe.button.check_hover = button_check_hover_wrapper(pe.button.check_hover)
 
     pe.button.Button = class_recordable_wrapper(pe.button.Button)
@@ -285,7 +287,10 @@ if not hasattr(pe.settings, 'wrapped'):
     pe.button.action = button_naming_wrapper(pe.button.action)
     pe.button.rect = button_naming_wrapper(pe.button.rect)
     pe.button.image = button_naming_wrapper(pe.button.image)
-    setattr(pe.settings, 'wrapped', True)
+
+    setattr(pe.settings, 'cb_tester_wrapped', True)
+
+from pygameextra_cool_buttons import cb
 
 
 class Context(pe.GameContext):
@@ -335,12 +340,14 @@ class Context(pe.GameContext):
         return *next(self.positions), *self.BUTTON_SIZE
 
     def loop(self):
-        pe.button.action(self.button_area, button_name='pe.button.action')
-        pe.button.rect(self.button_area, self.COLOR_A, self.COLOR_B, button_name='pe.button.rect')
-        pe.button.image(self.button_area, self.IMAGE_A, self.IMAGE_B, button_name='pe.button.image')
+        cb.action(self.button_area, button_name='pe.button.action')
+        cb.rect(self.button_area, self.COLOR_A, self.COLOR_B, button_name='pe.button.rect')
+        cb.image(self.button_area, self.IMAGE_A, self.IMAGE_B, button_name='pe.button.image')
 
-        pe.button.rect(self.button_area, self.COLOR_A, self.COLOR_B, button_name='shadow', shadow=True)
-        pe.button.rect(self.button_area, self.COLOR_A_PULSING, self.COLOR_B_PULSING, button_name='pulsing gradient')
+        cb.rect(self.button_area, self.COLOR_A, self.COLOR_B, button_name='shadow', shadow=True)
+        cb.rect(self.button_area, self.COLOR_A_PULSING, self.COLOR_B_PULSING, button_name='pulsing gradient')
+        cb.rect(self.button_area, self.COLOR_A, self.COLOR_B, button_name='outline',
+                inactive_resource_width=2, active_resource_width=4)
 
     def pre_loop(self):
         super().pre_loop()

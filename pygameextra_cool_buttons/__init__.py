@@ -1,8 +1,6 @@
 import pygameextra
-import pygameextra_cool_buttons.buttons as cool_buttons
+import pygameextra_cool_buttons.buttons
 from pygameextra_cool_buttons.color import *
 
-
-for attribute in dir(cool_buttons):
-    if 'button' in attribute.lower():
-        setattr(pygameextra, attribute, getattr(cool_buttons, attribute))
+# for attribute in dir(cb):
+#     setattr(pygameextra, attribute, getattr(cb, attribute))

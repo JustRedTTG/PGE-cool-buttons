@@ -5,7 +5,7 @@ from typing import Type, Union
 import pygameextra
 import pygameextra.button as buttons
 import pygameextra.settings as settings
-from pygameextra import draw
+from pygameextra import draw, mouse
 
 from pygameextra_cool_buttons.color import UniqueColor
 from pygameextra_cool_buttons.button_expansion import button_expansion_map
@@ -42,6 +42,10 @@ class WrappedButtonClass(buttons.Button):
             self.infos[name] = (info := color.Info())
         return color.get_color(info)
 
+    @property
+    def dynamic_area(self):
+        return self.get_shadow_area(self.area, self.shadow_offset) if self.shadow and mouse.clicked()[0] else None
+
     @staticmethod
     def _edge_rounding_translation(name: str, edge_rounding: int):
         if edge_rounding == -1:
@@ -61,7 +65,8 @@ class WrappedButtonClass(buttons.Button):
                       shadow_color: tuple = (0, 0, 0, 50), shadow_offset: tuple = (2, 2),
                       edge_rounding: int = -1,
                       edge_rounding_topright: int = -1, edge_rounding_topleft: int = -1,
-                      edge_rounding_bottomright: int = -1, edge_rounding_bottomleft: int = -1
+                      edge_rounding_bottomright: int = -1, edge_rounding_bottomleft: int = -1,
+                      dynamic_area: tuple = None
                       ):
         edge_rounding = cls._edge_rounding_translation('edge_rounding', edge_rounding)
         edge_rounding_topright = cls._edge_rounding_translation('edge_rounding_topright', edge_rounding_topright)
@@ -82,13 +87,13 @@ class WrappedButtonClass(buttons.Button):
 
         if cls.__base_button__ in button_expansion_map:
             button_expansion_map[cls.__base_button__].static_render(
-                area, inactive_resource, active_resource,
+                dynamic_area or area, inactive_resource, active_resource,
                 hovered, disabled, shadow, shadow_color, shadow_offset, edge_rounding,
                 edge_rounding_topright, edge_rounding_topleft,
                 edge_rounding_bottomright, edge_rounding_bottomleft
             )
         else:
-            super().static_render(area, inactive_resource, active_resource, hovered, disabled)
+            super().static_render(dynamic_area or area, inactive_resource, active_resource, hovered, disabled)
 
     def render(self, area: tuple = None, inactive_resource=None, active_resource=None,
                text: pygameextra.Text = None, disabled: Union[bool, tuple, UniqueColor] = False, shadow: bool = False,
@@ -113,7 +118,9 @@ class WrappedButtonClass(buttons.Button):
                            shadow_offset or self.shadow_offset,
                            edge_rounding or self.edge_rounding, edge_rounding_topright or self.edge_rounding_topright,
                            edge_rounding_topleft or self.edge_rounding_topleft,
-                           edge_rounding_bottomright or self.edge_rounding_bottomright)
+                           edge_rounding_bottomright or self.edge_rounding_bottomright,
+                           edge_rounding_bottomleft or self.edge_rounding_bottomleft,
+                           self.dynamic_area)
         self.static_render_text(area or self.area, text or self.text)
 
 

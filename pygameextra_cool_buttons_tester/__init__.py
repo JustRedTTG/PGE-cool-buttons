@@ -153,7 +153,7 @@ class ButtonRecorderMixin(pe.Button):
         return self.recording_state == 1 and self.elapsed < self.RECORDING_TIME_IN + self.RECORDING_CLICK_HOLD
 
     def render(self, *args, **kwargs):
-        pe.draw.rect((*pe.colors.black, 50), self.original_area, 2, edge_rounding=pe.settings.cb_default_edge_rounding)
+        pe.draw.rect((*pe.colors.black, 10), self.original_area, 2, edge_rounding=pe.settings.cb_default_edge_rounding)
         if not self.recording:
             self._render(*args, **kwargs)
         else:
@@ -337,8 +337,9 @@ class Context(pe.GameContext):
     def loop(self):
         pe.button.action(self.button_area, button_name='pe.button.action')
         pe.button.rect(self.button_area, self.COLOR_A, self.COLOR_B, button_name='pe.button.rect')
-        pe.button.rect(self.button_area, self.COLOR_A, self.COLOR_B, button_name='shadow', shadow=True)
         pe.button.image(self.button_area, self.IMAGE_A, self.IMAGE_B, button_name='pe.button.image')
+
+        pe.button.rect(self.button_area, self.COLOR_A, self.COLOR_B, button_name='shadow', shadow=True)
         pe.button.rect(self.button_area, self.COLOR_A_PULSING, self.COLOR_B_PULSING, button_name='pulsing gradient')
 
     def pre_loop(self):

@@ -31,7 +31,11 @@ class ButtonRecorderMixin(pe.Button):
     RECORDING_FAKE_OUTLINE: int = 15
     RECORDING_FAKE_INLINE: int = 5
     RECORDING_FRAMES = 40
-    RECORDING_TIME = 1.5
+    RECORDING_TIME_IN = 4
+    RECORDING_TIME_HOLD = 4
+    RECORDING_CLICK_HOLD = .1
+    RECORDING_TIME_OUT = 4
+    RECORDING_TIME = RECORDING_TIME_IN + RECORDING_TIME_HOLD + RECORDING_TIME_OUT
 
     button_name: str
     recording: bool
@@ -66,13 +70,13 @@ class ButtonRecorderMixin(pe.Button):
 
     def handle_recording(self):
         global RECORDING_IN_PROGRESS
-        if self.elapsed < 0.5:
+        if self.elapsed < self.RECORDING_TIME_IN:
             self.recording_state = 0
-        elif self.elapsed < 1:
+        elif self.elapsed < self.RECORDING_TIME_IN + self.RECORDING_TIME_HOLD:
             self.recording_state = 1
-        elif self.elapsed < 1.5:
+        elif self.elapsed < self.RECORDING_TIME:
             self.recording_state = 2
-        elif self.elapsed >= 1.5:
+        elif self.elapsed >= self.RECORDING_TIME:
             self.recording = False
             self.recording_state = -1
             threading.Thread(target=self.save_gif, daemon=True).start()
@@ -113,11 +117,11 @@ class ButtonRecorderMixin(pe.Button):
     def get_fake_mouse_position(self):
         t = 0
         if self.recording_state == 0:
-            t = min(1, (self.elapsed * 2))
+            t = min(1, (self.elapsed / self.RECORDING_TIME_IN))
         elif self.recording_state == 1:
             t = 1
         else:
-            t = 1 - ((self.elapsed - 1) / 0.5)
+            t = 1 - min(1, (self.elapsed - self.RECORDING_TIME_IN - self.RECORDING_TIME_HOLD) / self.RECORDING_TIME_OUT)
         return pe.math.lerp(
             tuple(size - (padding // 4) for size, padding in
                   zip(self.RECORDING_SURFACE_AREA, self.RECORDING_PADDING)),
@@ -139,10 +143,14 @@ class ButtonRecorderMixin(pe.Button):
                 self._logic(*args, **kwargs)
                 self.spoofed_mouse_position = pe.mouse.pos()
 
-            if self.recording_state == 1:
+            if self.spoof_mouse_click:
                 pe.settings.spoof_mouse_clicked = (True, False, False)
             wrapped()
             pe.settings.spoof_mouse_clicked = None
+
+    @property
+    def spoof_mouse_click(self):
+        return self.recording_state == 1 and self.elapsed < self.RECORDING_TIME_IN + self.RECORDING_CLICK_HOLD
 
     def render(self, *args, **kwargs):
         pe.draw.rect(pe.colors.black, self.original_area, 2)
@@ -157,7 +165,7 @@ class ButtonRecorderMixin(pe.Button):
                 self._render(*args, **kwargs)
 
                 if self.recording_capture_index < frame:
-                    if self.recording_state == 1:
+                    if self.spoof_mouse_click == 1:
                         pe.draw.circle(
                             (*pe.colors.black, 50),
                             self.spoofed_mouse_position or self.get_fake_mouse_position(),
@@ -290,13 +298,18 @@ class Context(pe.GameContext):
     COLOR_A = pe.colors.purple
     COLOR_B = pe.colors.darkaqua
     COLOR_B_PULSING = PulsingColor(GradientColor(
-        PartialGradientColor(Color(pe.colors.darkaqua), 0),
+        PartialGradientColor(Color(pe.colors.verydarkaqua), 0),
+        PartialGradientColor(Color(pe.colors.darkcyan), .5),
         PartialGradientColor(Color(pe.colors.aquamarine), 1)
-    ), 0.1, 0, 0.4)
+    ), .1, 0, 1)
+    COLOR_A_PULSING = PulsingColor(GradientColor(
+        PartialGradientColor(Color(pe.colors.red), 0),
+        PartialGradientColor(Color(pe.colors.orange), .5),
+        PartialGradientColor(Color(pe.colors.red), 1)
+    ), 2, .5, 2)
     IMAGE_A: pe.Image
     IMAGE_B: pe.Image
     FPS_LOGGER = True
-    FPS = 220
 
     def __init__(self):
         super().__init__()
@@ -325,7 +338,7 @@ class Context(pe.GameContext):
         pe.button.action(self.button_area, button_name='pe.button.action')
         pe.button.rect(self.button_area, self.COLOR_A, self.COLOR_B, button_name='pe.button.rect')
         pe.button.image(self.button_area, self.IMAGE_A, self.IMAGE_B, button_name='pe.button.image')
-        pe.button.rect(self.button_area, self.COLOR_A, self.COLOR_B_PULSING, button_name='pulsing color')
+        pe.button.rect(self.button_area, self.COLOR_A_PULSING, self.COLOR_B_PULSING, button_name='pulsing gradient')
 
     def pre_loop(self):
         super().pre_loop()

@@ -36,6 +36,7 @@ class WrappedButtonClass(buttons.Button):
                            active_resource or self_active_resource, self.hovered, disabled or self_disabled)
         self.static_render_text(area or self.area, text or self.text)
 
+
 def button_class_wrapper(button_class: Type[buttons.Button]):
     class Wrapped(WrappedButtonClass, button_class):
         def __init__(self, *args, **kwargs):

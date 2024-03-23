@@ -122,7 +122,7 @@ class WrappedButtonClass(buttons.Button):
                            edge_rounding_bottomright or self.edge_rounding_bottomright,
                            edge_rounding_bottomleft or self.edge_rounding_bottomleft,
                            self.dynamic_area)
-        self.static_render_text(area or self.area, text or self.text)
+        self.static_render_text(area or self.dynamic_area or self.area, text or self.text)
 
 
 def button_class_wrapper(button_class: Type[buttons.Button]):
